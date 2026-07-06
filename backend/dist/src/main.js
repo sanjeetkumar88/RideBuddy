@@ -9,10 +9,15 @@ const common_1 = require("@nestjs/common");
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    app.enableCors({
+        origin: 'http://localhost:3000',
+        credentials: true,
+    });
     app.useGlobalPipes(new common_1.ValidationPipe({ whitelist: true }));
     app.use((0, cookie_parser_1.default)());
-    const port = process.env.PORT || 3001;
+    const port = process.env.PORT || 3004;
     await app.listen(port);
+    console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();
 //# sourceMappingURL=main.js.map

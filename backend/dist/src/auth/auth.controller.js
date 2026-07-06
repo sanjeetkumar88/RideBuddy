@@ -33,6 +33,9 @@ let AuthController = class AuthController {
         this.setCookies(res, tokens.access_token, tokens.refresh_token);
         return { message: 'Logged in successfully' };
     }
+    async getProfile(req) {
+        return req.user;
+    }
     async logout(req, res) {
         await this.authService.logout(req.user.sub);
         res.clearCookie('access_token');
@@ -80,6 +83,15 @@ __decorate([
     __metadata("design:paramtypes", [auth_dto_1.LoginDto, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('me'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "getProfile", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Post)('logout'),

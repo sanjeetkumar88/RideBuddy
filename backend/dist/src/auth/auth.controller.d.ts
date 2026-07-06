@@ -10,6 +10,7 @@ export declare class AuthController {
     login(dto: LoginDto, res: Response): Promise<{
         message: string;
     }>;
+    getProfile(req: any): Promise<any>;
     logout(req: any, res: Response): Promise<{
         message: string;
     }>;

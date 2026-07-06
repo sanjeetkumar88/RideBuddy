@@ -1,6 +1,7 @@
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
+import { Role } from '@prisma/client';
 import { RedisService } from '../redis/redis.service';
 export declare class AuthService {
     private usersService;
@@ -20,7 +21,7 @@ export declare class AuthService {
         access_token: string;
         refresh_token: string;
     }>;
-    getTokens(userId: string, email: string, role: string): Promise<{
+    getTokens(userId: string, email: string, roles: Role[]): Promise<{
         access_token: string;
         refresh_token: string;
     }>;

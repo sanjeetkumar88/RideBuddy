@@ -8,10 +8,27 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RidesModule = void 0;
 const common_1 = require("@nestjs/common");
+const rides_controller_1 = require("./rides.controller");
+const rides_service_1 = require("./rides.service");
+const prisma_module_1 = require("../prisma/prisma.module");
+const redis_module_1 = require("../redis/redis.module");
+const bullmq_1 = require("@nestjs/bullmq");
+const rides_gateway_1 = require("./rides.gateway");
+const rides_processor_1 = require("./rides.processor");
 let RidesModule = class RidesModule {
 };
 exports.RidesModule = RidesModule;
 exports.RidesModule = RidesModule = __decorate([
-    (0, common_1.Module)({})
+    (0, common_1.Module)({
+        imports: [
+            prisma_module_1.PrismaModule,
+            redis_module_1.RedisModule,
+            bullmq_1.BullModule.registerQueue({
+                name: 'ride-allocation',
+            }),
+        ],
+        controllers: [rides_controller_1.RidesController],
+        providers: [rides_service_1.RidesService, rides_gateway_1.RidesGateway, rides_processor_1.RidesProcessor],
+    })
 ], RidesModule);
 //# sourceMappingURL=rides.module.js.map

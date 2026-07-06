@@ -15,15 +15,39 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const existingUser = await this.usersService.findByEmail(dto.email);
-    if (existingUser) throw new BadRequestException('Email already exists');
+    let existingUser = await this.usersService.findByEmail(dto.email);
+    
+    if (existingUser) {
+      // If user exists, but is upgrading to Driver
+      if (dto.role === Role.DRIVER && !existingUser.roles.includes(Role.DRIVER)) {
+        if (!dto.vehicleModel || !dto.vehiclePlate || !dto.vehicleColor) {
+          throw new BadRequestException('Driver requires vehicle details');
+        }
+        
+        const isMatch = await bcrypt.compare(dto.password, existingUser.password);
+        if (!isMatch) throw new UnauthorizedException('Invalid credentials for existing account');
+
+        existingUser = await this.usersService.update(existingUser.id, {
+          roles: [...existingUser.roles, Role.DRIVER],
+          driverProfile: {
+            create: {
+              vehicleModel: dto.vehicleModel,
+              vehiclePlate: dto.vehiclePlate,
+              vehicleColor: dto.vehicleColor,
+            },
+          },
+        });
+        return this.getTokens(existingUser.id, existingUser.email, existingUser.roles);
+      } else {
+        throw new BadRequestException('Email already exists');
+      }
+    }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    
     const userCreateInput: any = {
       email: dto.email,
       password: hashedPassword,
-      role: dto.role || Role.RIDER,
+      roles: dto.role ? [dto.role] : [Role.RIDER],
     };
 
     if (dto.role === Role.DRIVER) {
@@ -40,7 +64,7 @@ export class AuthService {
     }
 
     const newUser = await this.usersService.create(userCreateInput);
-    return this.getTokens(newUser.id, newUser.email, newUser.role);
+    return this.getTokens(newUser.id, newUser.email, newUser.roles);
   }
 
   async login(dto: LoginDto) {
@@ -50,7 +74,7 @@ export class AuthService {
     const isMatch = await bcrypt.compare(dto.password, user.password);
     if (!isMatch) throw new UnauthorizedException('Invalid credentials');
 
-    return this.getTokens(user.id, user.email, user.role);
+    return this.getTokens(user.id, user.email, user.roles);
   }
 
   async logout(userId: string) {
@@ -67,17 +91,17 @@ export class AuthService {
     const rtMatches = await bcrypt.compare(rt, storedRtHash);
     if (!rtMatches) throw new UnauthorizedException('Access Denied');
 
-    return this.getTokens(user.id, user.email, user.role);
+    return this.getTokens(user.id, user.email, user.roles);
   }
 
-  async getTokens(userId: string, email: string, role: string) {
+  async getTokens(userId: string, email: string, roles: Role[]) {
     const [at, rt] = await Promise.all([
       this.jwtService.signAsync(
-        { sub: userId, email, role },
+        { sub: userId, email, roles },
         { secret: 'at-secret', expiresIn: '15m' },
       ),
       this.jwtService.signAsync(
-        { sub: userId, email, role },
+        { sub: userId, email, roles },
         { secret: 'rt-secret', expiresIn: '7d' },
       ),
     ]);

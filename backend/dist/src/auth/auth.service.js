@@ -59,14 +59,36 @@ let AuthService = class AuthService {
         this.redisService = redisService;
     }
     async register(dto) {
-        const existingUser = await this.usersService.findByEmail(dto.email);
-        if (existingUser)
-            throw new common_1.BadRequestException('Email already exists');
+        let existingUser = await this.usersService.findByEmail(dto.email);
+        if (existingUser) {
+            if (dto.role === client_1.Role.DRIVER && !existingUser.roles.includes(client_1.Role.DRIVER)) {
+                if (!dto.vehicleModel || !dto.vehiclePlate || !dto.vehicleColor) {
+                    throw new common_1.BadRequestException('Driver requires vehicle details');
+                }
+                const isMatch = await bcrypt.compare(dto.password, existingUser.password);
+                if (!isMatch)
+                    throw new common_1.UnauthorizedException('Invalid credentials for existing account');
+                existingUser = await this.usersService.update(existingUser.id, {
+                    roles: [...existingUser.roles, client_1.Role.DRIVER],
+                    driverProfile: {
+                        create: {
+                            vehicleModel: dto.vehicleModel,
+                            vehiclePlate: dto.vehiclePlate,
+                            vehicleColor: dto.vehicleColor,
+                        },
+                    },
+                });
+                return this.getTokens(existingUser.id, existingUser.email, existingUser.roles);
+            }
+            else {
+                throw new common_1.BadRequestException('Email already exists');
+            }
+        }
         const hashedPassword = await bcrypt.hash(dto.password, 10);
         const userCreateInput = {
             email: dto.email,
             password: hashedPassword,
-            role: dto.role || client_1.Role.RIDER,
+            roles: dto.role ? [dto.role] : [client_1.Role.RIDER],
         };
         if (dto.role === client_1.Role.DRIVER) {
             if (!dto.vehicleModel || !dto.vehiclePlate || !dto.vehicleColor) {
@@ -81,7 +103,7 @@ let AuthService = class AuthService {
             };
         }
         const newUser = await this.usersService.create(userCreateInput);
-        return this.getTokens(newUser.id, newUser.email, newUser.role);
+        return this.getTokens(newUser.id, newUser.email, newUser.roles);
     }
     async login(dto) {
         const user = await this.usersService.findByEmail(dto.email);
@@ -90,7 +112,7 @@ let AuthService = class AuthService {
         const isMatch = await bcrypt.compare(dto.password, user.password);
         if (!isMatch)
             throw new common_1.UnauthorizedException('Invalid credentials');
-        return this.getTokens(user.id, user.email, user.role);
+        return this.getTokens(user.id, user.email, user.roles);
     }
     async logout(userId) {
         await this.redisService.del(`rt:${userId}`);
@@ -105,12 +127,12 @@ let AuthService = class AuthService {
         const rtMatches = await bcrypt.compare(rt, storedRtHash);
         if (!rtMatches)
             throw new common_1.UnauthorizedException('Access Denied');
-        return this.getTokens(user.id, user.email, user.role);
+        return this.getTokens(user.id, user.email, user.roles);
     }
-    async getTokens(userId, email, role) {
+    async getTokens(userId, email, roles) {
         const [at, rt] = await Promise.all([
-            this.jwtService.signAsync({ sub: userId, email, role }, { secret: 'at-secret', expiresIn: '15m' }),
-            this.jwtService.signAsync({ sub: userId, email, role }, { secret: 'rt-secret', expiresIn: '7d' }),
+            this.jwtService.signAsync({ sub: userId, email, roles }, { secret: 'at-secret', expiresIn: '15m' }),
+            this.jwtService.signAsync({ sub: userId, email, roles }, { secret: 'rt-secret', expiresIn: '7d' }),
         ]);
         await this.updateRtHash(userId, rt);
         return { access_token: at, refresh_token: rt };

@@ -10,17 +10,37 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
+const auth_module_1 = require("./auth/auth.module");
 const users_module_1 = require("./users/users.module");
-const rides_module_1 = require("./rides/rides.module");
 const prisma_module_1 = require("./prisma/prisma.module");
 const redis_module_1 = require("./redis/redis.module");
-const auth_module_1 = require("./auth/auth.module");
+const rides_module_1 = require("./rides/rides.module");
+const config_1 = require("@nestjs/config");
+const maps_module_1 = require("./maps/maps.module");
+const bullmq_1 = require("@nestjs/bullmq");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [users_module_1.UsersModule, rides_module_1.RidesModule, prisma_module_1.PrismaModule, redis_module_1.RedisModule, auth_module_1.AuthModule],
+        imports: [
+            config_1.ConfigModule.forRoot({ isGlobal: true }),
+            bullmq_1.BullModule.forRootAsync({
+                imports: [config_1.ConfigModule],
+                useFactory: async (configService) => ({
+                    connection: {
+                        url: configService.get('REDIS_URL') || 'redis://localhost:6379',
+                    },
+                }),
+                inject: [config_1.ConfigService],
+            }),
+            auth_module_1.AuthModule,
+            users_module_1.UsersModule,
+            prisma_module_1.PrismaModule,
+            redis_module_1.RedisModule,
+            rides_module_1.RidesModule,
+            maps_module_1.MapsModule,
+        ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
     })

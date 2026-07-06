@@ -21,6 +21,27 @@ let RedisService = RedisService_1 = class RedisService extends ioredis_1.Redis {
     onModuleInit() {
         this.on('connect', () => this.logger.log('Redis successfully connected'));
         this.on('error', (err) => this.logger.error('Redis connection error', err));
+        this.defineCommand('acceptRide', {
+            numberOfKeys: 2,
+            lua: `
+        local rideKey = KEYS[1]
+        local driverKey = KEYS[2]
+        local driverId = ARGV[1]
+        
+        local currentState = redis.call("GET", rideKey)
+        if currentState == "SEARCHING" then
+          redis.call("SET", rideKey, "ASSIGNED")
+          redis.call("SET", driverKey, driverId)
+          return 1
+        elseif currentState == "ASSIGNED" then
+          local currentDriver = redis.call("GET", driverKey)
+          if currentDriver == driverId then
+            return 1
+          end
+        end
+        return 0
+      `,
+        });
     }
     onModuleDestroy() {
         this.disconnect();

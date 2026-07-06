@@ -17,8 +17,9 @@ model User {
   id                 String         @id @default(uuid())
   email              String         @unique
   password           String
-  role               Role           @default(RIDER)
+  roles              Role[]         @default([RIDER])
   driverProfile      DriverProfile?
+  riderRides         Ride[]         @relation("RiderRides")
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 }
@@ -30,6 +31,31 @@ model DriverProfile {
   vehicleModel String
   vehiclePlate String
   vehicleColor String
+  rides        Ride[]   @relation("DriverRides")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+enum RideStatus {
+  REQUESTED
+  SEARCHING
+  ASSIGNED
+  TIMEOUT
+  COMPLETED
+  CANCELLED
+}
+
+model Ride {
+  id        String     @id @default(uuid())
+  riderId   String
+  rider     User       @relation("RiderRides", fields: [riderId], references: [id])
+  driverId  String?
+  driver    DriverProfile? @relation("DriverRides", fields: [driverId], references: [userId])
+  status    RideStatus @default(REQUESTED)
+  pickupLat Float
+  pickupLng Float
+  dropLat   Float
+  dropLng   Float
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }

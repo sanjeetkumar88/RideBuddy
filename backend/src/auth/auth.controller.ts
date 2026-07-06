@@ -26,6 +26,14 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('me')
+  @HttpCode(HttpStatus.OK)
+  async getProfile(@Req() req: any) {
+    // Return user object directly from JWT payload
+    return req.user;
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: any, @Res({ passthrough: true }) res: Response) {
