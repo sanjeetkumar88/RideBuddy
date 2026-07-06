@@ -49,18 +49,19 @@ JWT_REFRESH_SECRET="super-refresh-secret-change-me"
 GOOGLE_MAPS_API_KEY=""
 ```
 
-3. **Database Migration**
+3. **Start the Entire Full-Stack App**
+   We have configured Docker Compose to automatically build and spin up the PostgreSQL Database, the Redis Server, the NestJS Backend, and the Next.js Frontend all at once!
    ```bash
-   npx prisma migrate dev
+   docker-compose up --build
    ```
 
-4. **Start Application**
-   ```bash
-   npm run start:dev
-   ```
+   **Alternatively, to run manually (without Docker for app):**
+   1. `docker-compose up postgres redis -d`
+   2. `cd backend && npm run start:dev`
+   3. `cd frontend && npm run dev`
 
-> [!WARNING]
-> If you started the backend server *before* setting up the `.env` file correctly, you must **restart the server** for the new environment variables to take effect. Otherwise, API calls will return `500 Internal Server Error`.
+> [!TIP]
+> The backend will be available at `http://localhost:3004` and the beautiful frontend will be available at `http://localhost:3000`. You can test everything via the browser instantly!
 
 ## API End-to-End Walkthrough (cURL)
 
