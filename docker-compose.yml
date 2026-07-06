@@ -25,12 +25,11 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3004:3004"
+    env_file:
+      - ./backend/.env
     environment:
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/ridebuddy?schema=public
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=super-secret-key-change-me
-      - JWT_REFRESH_SECRET=super-refresh-secret-change-me
-      - GOOGLE_MAPS_API_KEY=
       - PORT=3004
     depends_on:
       - postgres
